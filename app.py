@@ -2,13 +2,14 @@
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 import os
-import cv2
 import sys
+import cv2
+
 import datetime
 from ultralytics import YOLO 
 from PIL import Image
 model = YOLO("cup_detector.pt")
-source = "/kaggle/input/video-weights/dulux_paint.mp4"
+source = "Clip 1 - Cup.mp4"
 results = model.track(source = source)
 
 rbox = []
@@ -53,22 +54,13 @@ while True:
 
 
 
+image_path = 'nescafe_cup.png'
 
 
-# Provide the path to your image
-image_path = '/kaggle/input/video-weights/nescafe_cup.png'
-
-
-cv2.imread("/kaggle/input/video-weights/nescafe_cup.png")
-
-# %% [code] {"execution":{"iopub.status.busy":"2023-08-26T12:57:51.200890Z","iopub.execute_input":"2023-08-26T12:57:51.201260Z","iopub.status.idle":"2023-08-26T12:57:51.205886Z","shell.execute_reply.started":"2023-08-26T12:57:51.201229Z","shell.execute_reply":"2023-08-26T12:57:51.204718Z"},"jupyter":{"outputs_hidden":false}}
 import matplotlib.pyplot as plt
 
-# Provide the path to your RGB image, the color to increase ('red', 'green', or 'blue'), and the increase factor
-image_path = '/kaggle/input/video-weights/nescafe_cup.png'
-
 video_path = source # can be found in the data link will be shared if you want to test out your own
-ad_image_path = '/kaggle/input/video-weights/mcdonalds.png' # Can be found in the data
+ad_image_path = 'nescafe_cup.png' # Can be found in the data
 bounding_boxes = rbox
 
 # Load the video using OpenCV
@@ -90,7 +82,6 @@ frame_count = int(video_cap.get(cv2.CAP_PROP_FRAME_COUNT))
 output_path = 'demo_cup.mp4' # output video naame
 
 import os
-import cv2
 import argparse
 import numpy as np
 import numpy as np
@@ -106,7 +97,6 @@ print("path")
 print(sys.path)
 from src import model
 
-ad_image_path = "/kaggle/input/video-weights/mcdonalds.png"
 bg_video_path = source
 
 def load_video_frames(video_path):
@@ -132,12 +122,13 @@ def load_video_frames(video_path):
 cuda = torch.cuda.is_available()
 
 # create/load the harmonizer model
-print('Create/load Harmonizer...\n')
+print('load Harmonizer...\n')
 harmonizer = model.Harmonizer()
 if cuda:
     harmonizer = harmonizer.cuda()
-harmonizer.load_state_dict(torch.load('./pretrained/harmonizer.pth'), strict=True)
+harmonizer.load_state_dict(torch.load('./pretrained/harmonizer.pth', map_location='cpu'), strict=True)
 harmonizer.eval()
+print('Harmonizer loaded...\n')
 
 
 # define example paths
@@ -148,9 +139,9 @@ harmonized_video_path = "demo_cup.mp4"
 bg_frames, fps = load_video_frames(bg_video_path)
 fps = 25
 ema = 1 - 1 / fps
-
+print('Background Video Loaded loaded...\n')
 image_data = cv2.imread(ad_image_path , cv2.IMREAD_UNCHANGED)
-
+print('Ad image loaded...\n')
 h, w = bg_frames[0].shape[:2]
 
 # define video writer
@@ -162,8 +153,9 @@ harmonized_vw = cv2.VideoWriter(harmonized_video_path, fourcc, fps, (w, h))
 # harmonization
 ema_arguments = None
 pbar = tqdm(range(len(bg_frames)), total=len(bg_frames), unit='frame')
-
+print("start harmonizing")
 for i, fdx in enumerate(pbar):
+    print(f"starting {i}")
     x,y,w,h = 0 ,0 ,0,0,
     for box in bounding_boxes[i]:
         if len(box) < 4:
@@ -175,7 +167,6 @@ for i, fdx in enumerate(pbar):
         h = int((ymax - y))
     height, width = bg_frames[0].shape[:2]
     image = Image.fromarray(image_data)
-    iamge = image.transpose(Image.FLIP_LEFT_RIGHT)
     image.thumbnail((w+60, h+40))
     image = np.asarray(image.convert("RGBA"))
     new = Image.new(mode="RGBA", size=(width,height))
